@@ -65,13 +65,17 @@ static NSDictionary *RCTFormatLocalNotification(UILocalNotification *notificatio
 
 + (void) setup:(UIApplication *) application
 {
+  [[[FirestackCloudMessaging alloc] init] setup];
+}
+
+- (void) setup {
   [[NSNotificationCenter defaultCenter] addObserver:self
-    selector:@selector(connectToFirebase)
+    selector:@selector(disconnectFromFirebase)
     name: UIApplicationDidEnterBackgroundNotification
     object: nil];
 
   [[NSNotificationCenter defaultCenter] addObserver:self
-    selector:@selector(disconnectFromFirebase)
+    selector:@selector(connectToFirebase)
     name: UIApplicationDidBecomeActiveNotification
     object: nil];
 
@@ -91,32 +95,27 @@ static NSDictionary *RCTFormatLocalNotification(UILocalNotification *notificatio
     object: nil];
 
   if (SYSTEM_VERSION_LESS_THAN_OR_EQUAL_TO(@"9.0")) {
-  UIUserNotificationType allNotificationTypes =
-  (UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge);
-  UIUserNotificationSettings *settings =
-  [UIUserNotificationSettings settingsForTypes:allNotificationTypes categories:nil];
-  [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
-} else {
-  // iOS 10 or later
-  #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-  UNAuthorizationOptions authOptions =
-      UNAuthorizationOptionAlert
-      | UNAuthorizationOptionSound
-      | UNAuthorizationOptionBadge;
-  [[UNUserNotificationCenter currentNotificationCenter]
-      requestAuthorizationWithOptions:authOptions
-      completionHandler:^(BOOL granted, NSError * _Nullable error) {
-      }
-   ];
+    UIUserNotificationType allNotificationTypes = (UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge);
+    UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:allNotificationTypes categories:nil];
+    [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+  } else {
+    // iOS 10 or later
+    #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+    UNAuthorizationOptions authOptions = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
+    [[UNUserNotificationCenter currentNotificationCenter]
+        requestAuthorizationWithOptions:authOptions
+        completionHandler:^(BOOL granted, NSError * _Nullable error) {
+          [[UIApplication sharedApplication] registerForRemoteNotifications];
+        }
+    ];
 
-  // For iOS 10 display notification (sent via APNS)
-  [[UNUserNotificationCenter currentNotificationCenter] setDelegate:self];
-  // For iOS 10 data message (sent via FCM)
-  [[FIRMessaging messaging] setRemoteMessageDelegate:self];
-  #endif
-}
+    // For iOS 10 display notification (sent via APNS)
+    [[UNUserNotificationCenter currentNotificationCenter] setDelegate:self];
+    // For iOS 10 data message (sent via FCM)
+    [[FIRMessaging messaging] setRemoteMessageDelegate:self];
+    #endif
+  }
 
-[[UIApplication sharedApplication] registerForRemoteNotifications];
 }
 
 #pragma mark callbacks

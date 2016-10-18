@@ -8,7 +8,7 @@
 #import "FirestackErrors.h"
 #import "FirestackEvents.h"
 // #import "FirestackAnalytics.h"
-// #import "FirestackCloudMessaging.h"
+#import "FirestackCloudMessaging.h"
 
 static Firestack *_sharedInstance = nil;
 static dispatch_once_t onceToken;
@@ -28,7 +28,7 @@ typedef void (^UserWithTokenResponse)(NSDictionary *, NSError *);
 withLaunchOptions: (NSDictionary *) launchOptions
 {
     NSLog(@"Called setup for firestack with application");
-    
+    [FirestackCloudMessaging setup:application];
     dispatch_once(&onceToken, ^{
         [application registerForRemoteNotifications];
         
