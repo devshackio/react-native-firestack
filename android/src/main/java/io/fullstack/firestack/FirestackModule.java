@@ -3,6 +3,7 @@ package io.fullstack.firestack;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.app.Activity;
 import android.util.Log;
 import android.content.Context;
 import android.support.annotation.Nullable;
@@ -61,6 +62,33 @@ public class FirestackModule extends ReactContextBaseJavaModule implements Lifec
       result.putString("error", gapi.getErrorString(status));
     }
     return result;
+  }
+
+  @ReactMethod
+  public void doPlayServicesCheck(@Nullable final Callback onComplete) {
+    Log.d(TAG, "doPlayServicesCheck()");
+    boolean result = doPlayServicesCheck(getCurrentActivity());
+    if (onComplete != null) onComplete.invoke(null, result);
+  }
+
+  public static boolean doPlayServicesCheck(Activity activity) {
+    final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+    int resultCode = apiAvailability.isGooglePlayServicesAvailable(activity);
+    Log.d(TAG, "GoogleApiAvailability.isGooglePlayServicesAvailable resultCode: "+resultCode);
+    if (resultCode != ConnectionResult.SUCCESS) {
+      Log.d(TAG, "was not successful");
+      if (apiAvailability.isUserResolvableError(resultCode)) {
+        Log.d(TAG, "is user resolvable");
+        apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
+                .show();
+      }
+      else {
+        Log.d(TAG, "This device is not supported.");
+      }
+      return false;
+    }
+    return true;
   }
 
   @ReactMethod
