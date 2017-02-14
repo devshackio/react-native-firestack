@@ -4,10 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.util.Log;
 import android.content.Context;
 import android.support.annotation.Nullable;
 
+import com.facebook.common.activitylistener.BaseActivityListener;
+import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -30,8 +36,10 @@ interface KeySetterFn {
 }
 
 @SuppressWarnings("WeakerAccess")
-public class FirestackModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
+public class FirestackModule extends ReactContextBaseJavaModule implements LifecycleEventListener, ActivityEventListener
+{
   private static final String TAG = "Firestack";
+  private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
   private Context context;
   private ReactContext mReactContext;
   private FirebaseApp app;
@@ -40,7 +48,6 @@ public class FirestackModule extends ReactContextBaseJavaModule implements Lifec
     super(reactContext);
     this.context = context;
     mReactContext = reactContext;
-
     Log.d(TAG, "New instance");
   }
 
@@ -71,17 +78,21 @@ public class FirestackModule extends ReactContextBaseJavaModule implements Lifec
     if (onComplete != null) onComplete.invoke(null, result);
   }
 
-  public static boolean doPlayServicesCheck(Activity activity) {
-    final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+  public static boolean doPlayServicesCheck(final Activity activity) {
     GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
     int resultCode = apiAvailability.isGooglePlayServicesAvailable(activity);
+    resultCode = ConnectionResult.SERVICE_VERSION_UPDATE_REQUIRED;
     Log.d(TAG, "GoogleApiAvailability.isGooglePlayServicesAvailable resultCode: "+resultCode);
     if (resultCode != ConnectionResult.SUCCESS) {
       Log.d(TAG, "was not successful");
       if (apiAvailability.isUserResolvableError(resultCode)) {
         Log.d(TAG, "is user resolvable");
-        apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-                .show();
+        apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST, new DialogInterface.OnCancelListener() {
+          @Override
+          public void onCancel(DialogInterface dialog) {
+            System.exit(0);
+          }
+        }).show();
       }
       else {
         Log.d(TAG, "This device is not supported.");
@@ -236,5 +247,22 @@ public class FirestackModule extends ReactContextBaseJavaModule implements Lifec
     final Map<String, Object> constants = new HashMap<>();
     constants.put("googleApiAvailability", getPlayServicesStatus());
     return constants;
+  }
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == PLAY_SERVICES_RESOLUTION_REQUEST) {
+      restartActivity(getCurrentActivity());
+    }
+  }
+
+  static private void restartActivity(Activity activity) {
+    Intent mStartActivity = new Intent(activity, activity.getClass());
+    int mPendingIntentId = 123456;
+    PendingIntent mPendingIntent = PendingIntent.getActivity(activity, mPendingIntentId, mStartActivity,
+                                                             PendingIntent.FLAG_CANCEL_CURRENT);
+    AlarmManager mgr = (AlarmManager) activity.getSystemService(Context.ALARM_SERVICE);
+    mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+    System.exit(0);
   }
 }
