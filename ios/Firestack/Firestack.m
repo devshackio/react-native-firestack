@@ -52,12 +52,14 @@ withLaunchOptions: (NSDictionary *) launchOptions
 {
     dispatch_once(&onceToken, ^{
         _sharedInstance = instance;
-        
+
+        /* RCTReloadNotification is deprecated
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(reloadFirestack)
                                                      name:RCTReloadNotification
                                                    object:nil];
-        
+        */
+
         [[NSNotificationCenter defaultCenter]
          postNotificationName:kFirestackInitialized
          object:nil];
