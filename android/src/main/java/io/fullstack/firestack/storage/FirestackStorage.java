@@ -264,12 +264,11 @@ public class FirestackStorage extends ReactContextBaseJavaModule {
     Log.i(TAG, "From file: " + filepath + " to " + urlStr + " with name " + name);
 
     try {
-      Uri file;
+      Uri uri;
       if (filepath.startsWith("content://")) {
-        String realPath = getRealPathFromURI(filepath);
-        file = Uri.fromFile(new File(realPath));
+        uri = Uri.parse(filepath);
       } else {
-        file = Uri.fromFile(new File(filepath));
+        uri = Uri.fromFile(new File(filepath));
       }
 
       StorageMetadata.Builder metadataBuilder = new StorageMetadata.Builder();
@@ -280,7 +279,7 @@ public class FirestackStorage extends ReactContextBaseJavaModule {
       }
 
       StorageMetadata md = metadataBuilder.build();
-      UploadTask uploadTask = fileRef.putFile(file, md);
+      UploadTask uploadTask = fileRef.putFile(uri, md);
 
       // register observers to listen for when the download is done or if it fails
       uploadTask
